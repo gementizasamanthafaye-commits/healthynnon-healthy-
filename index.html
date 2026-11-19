@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VisionClassifier — Teachable Machine Web App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: rgba(17, 24, 39, 0.82);
+      --surface-2: rgba(30, 41, 59, 0.65);
+      --border: rgba(148, 163, 184, 0.16);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --radius: 18px;
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(56, 189, 248, 0.14), transparent 36%),
+        radial-gradient(circle at 88% 18%, rgba(129, 140, 248, 0.14), transparent 38%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(1140px, 92vw);
+      margin: 0 auto;
+    }
+
+    /* Navigation */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(14px);
+      background: rgba(9, 13, 22, 0.72);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 16px var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.92rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+    }
+
+    .status-pill.ready {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--success);
+      border-color: rgba(52, 211, 153, 0.28);
+    }
+
+    .status-pill.error {
+      background: rgba(248, 113, 113, 0.14);
+      color: var(--danger);
+      border-color: rgba(248, 113, 113, 0.32);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 3.4rem 0 2rem;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 0.85rem;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 4.4vw, 3.35rem);
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      font-weight: 800;
+      max-width: 20ch;
+      margin: 0 auto 1rem;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #7dd3fc, #a5b4fc, #6ee7b7);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero p {
+      color: var(--muted);
+      max-width: 62ch;
+      margin: 0 auto;
+      font-size: 1.03rem;
+    }
+
+    /* Main Workspace Grid */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 1.5rem;
+      padding: 1.2rem 0 3.2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 0.35rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 1.35rem;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.92rem;
+      padding: 0.65rem 1rem;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(129, 140, 248, 0.22));
+      color: var(--text);
+      border: 1px solid rgba(125, 211, 252, 0.3);
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .media-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 14px;
+      background: #050811;
+      border: 1px dashed rgba(148, 163, 184, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .media-stage canvas,
+    .media-stage img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .placeholder-msg {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .placeholder-msg strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+      font-size: 1rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.72rem 1.15rem;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(125, 211, 252, 0.45);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #4f46e5);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    .dropzone {
+      border: 1.5px dashed rgba(125, 211, 252, 0.35);
+      border-radius: 14px;
+      padding: 1.25rem;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.55);
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      margin-bottom: 0.9rem;
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .dropzone p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .dropzone span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    /* Visual Feedback / Results Panel */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .results-header h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .top-match-card {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(129, 140, 248, 0.12));
+      border: 1px solid rgba(125, 211, 252, 0.28);
+      border-radius: 14px;
+      padding: 1.15rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .top-match-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .top-match-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .top-class-name {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .top-confidence {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--success);
+    }
+
+    .confidence-meter {
+      height: 8px;
+      width: 100%;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      overflow: hidden;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      transition: width 0.18s ease-out;
+    }
+
+    .confidence-note {
+      margin-top: 0.55rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .prediction-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .pred-item {
+      background: rgba(15, 23, 42, 0.62);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+    }
+
+    .pred-item.is-top {
+      border-color: rgba(52, 211, 153, 0.45);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .pred-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.45rem;
+    }
+
+    .pred-bar-bg {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(30, 41, 59, 0.9);
+      overflow: hidden;
+    }
+
+    .pred-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.18s ease-out;
+    }
+
+    .pred-item.is-top .pred-bar-fill {
+      background: linear-gradient(90deg, #34d399, #38bdf8);
+    }
+
+    .alert-box {
+      margin-top: 0.9rem;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      font-size: 0.86rem;
+      background: rgba(248, 113, 113, 0.12);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: #fecaca;
+      display: none;
+    }
+
+    .alert-box.show {
+      display: block;
+    }
+
+    /* Community Significance Section */
+    .significance {
+      padding: 2.5rem 0 4rem;
+    }
+
+    .section-head {
+      margin-bottom: 1.6rem;
+      max-width: 68ch;
+    }
+
+    .section-head h2 {
+      font-size: clamp(1.55rem, 3vw, 2.2rem);
+      letter-spacing: -0.025em;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-head p {
+      color: var(--muted);
+    }
+
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+      gap: 1.15rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .sig-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.35rem;
+    }
+
+    .sig-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+      padding: 0.25rem 0.6rem;
+      border-radius: 8px;
+      margin-bottom: 0.7rem;
+    }
+
+    .sig-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .sig-card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .connection-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.92));
+      border: 1px solid rgba(125, 211, 252, 0.25);
+      border-radius: 16px;
+      padding: 1.4rem 1.6rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    @media (max-width: 720px) {
+      .connection-banner {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .connection-banner h3 {
+      font-size: 1.08rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .connection-banner p {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 0 2.5rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    footer code {
+      color: var(--text);
+      background: rgba(30, 41, 59, 0.8);
+      padding: 0.15rem 0.4rem;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a href="#" class="brand">
+        <span class="brand-dot"></span>
+        <span>VisionClassifier</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#tester">Live Tester</a>
+        <a href="#significance">Community Significance</a>
+        <span id="model-status" class="status-pill">Loading model...</span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">Teachable Machine × TensorFlow.js</span>
+        <h1>Real-Time Image Recognition <span class="gradient-text">In Your Browser</span></h1>
+        <p>
+          Test your custom Teachable Machine image model instantly using a live webcam feed or by uploading still photos—with real-time confidence feedback and zero backend servers.
+        </p>
+      </div>
+    </section>
+
+    <section id="tester" class="container workspace">
+      <!-- Left: Input Controls (Webcam & Upload) -->
+      <div class="card">
+        <div class="mode-tabs" role="tablist" aria-label="Detection mode">
+          <button id="tab-webcam" class="tab-btn active" role="tab" aria-selected="true">Live Webcam</button>
+          <button id="tab-upload" class="tab-btn" role="tab" aria-selected="false">Upload Image</button>
+        </div>
+
+        <!-- Webcam Panel -->
+        <div id="panel-webcam" class="panel active" role="tabpanel">
+          <div id="webcam-stage" class="media-stage">
+            <div id="webcam-placeholder" class="placeholder-msg">
+              <strong>Webcam is currently off</strong>
+              Click "Start Webcam" and allow camera permission to run live classification.
+            </div>
+          </div>
+          <div class="controls">
+            <button id="btn-start-cam" class="btn btn-primary" disabled>Start Webcam</button>
+            <button id="btn-stop-cam" class="btn" disabled>Stop Webcam</button>
+            <button id="btn-flip-cam" class="btn" disabled>Flip: On</button>
+          </div>
+        </div>
+
+        <!-- Upload Panel -->
+        <div id="panel-upload" class="panel" role="tabpanel">
+          <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload an image file">
+            <p><span>Click to choose an image</span> or drag and drop PNG, JPG, or WEBP here</p>
+            <input id="file-input" type="file" accept="image/*" />
+          </div>
+
+          <div id="upload-stage" class="media-stage">
+            <div id="upload-placeholder" class="placeholder-msg">
+              <strong>No image selected yet</strong>
+              Upload any photo to classify it immediately against your model.
+            </div>
+            <img id="preview-img" alt="Uploaded preview" style="display: none;" />
+          </div>
+
+          <div class="controls">
+            <button id="btn-choose-file" class="btn btn-primary">Choose Image</button>
+            <button id="btn-clear-img" class="btn" disabled>Clear Image</button>
+          </div>
+        </div>
+
+        <div id="error-alert" class="alert-box" role="alert"></div>
+      </div>
+
+      <!-- Right: Clear Visual Feedback -->
+      <div class="card" aria-live="polite">
+        <div class="results-header">
+          <h2>Prediction Feedback</h2>
+          <span id="source-tag" class="status-pill">Idle</span>
+        </div>
+
+        <div class="top-match-card">
+          <div class="top-match-label">Top Detected Class</div>
+          <div class="top-match-row">
+            <span id="top-class" class="top-class-name">—</span>
+            <span id="top-prob" class="top-confidence">0%</span>
+          </div>
+          <div class="confidence-meter">
+            <div id="top-bar" class="confidence-fill"></div>
+          </div>
+          <p id="confidence-note" class="confidence-note">Waiting for model &amp; input...</p>
+        </div>
+
+        <div id="prediction-list" class="prediction-list"></div>
+      </div>
+    </section>
+
+    <!-- Community Significance Section -->
+    <section id="significance" class="container significance">
+      <div class="section-head">
+        <span class="eyebrow">Why This Matters</span>
+        <h2>Significance to the Community &amp; Everyday Users</h2>
+        <p>
+          Turning a trained Teachable Machine model into an open, single-file web app bridges the gap between machine learning experiments and real people using the tool.
+        </p>
+      </div>
+
+      <div class="sig-grid">
+        <article class="sig-card">
+          <span class="sig-badge">01 · Privacy First</span>
+          <h3>Local Browser Inference</h3>
+          <p>
+            Predictions run directly on the user's device using TensorFlow.js. Webcam frames and uploaded photos aren't sent to a custom backend server for classification, building trust for sensitive or everyday use.
+          </p>
+        </article>
+
+        <article class="sig-card">
+          <span class="sig-badge">02 · Zero-Cost Access</span>
+          <h3>Free Hosting on GitHub Pages</h3>
+          <p>
+            Because everything lives in a single <code>index.html</code> file calling public model &amp; CDN assets, anyone in the community can host, fork, remix, or share it on GitHub Pages without paying for servers or databases.
+          </p>
+        </article>
+
+        <article class="sig-card">
+          <span class="sig-badge">03 · Practical Learning</span>
+          <h3>Hands-On Model Testing</h3>
+          <p>
+            Students, educators, and builders can immediately see how lighting, angles, and background clutter affect confidence scores—turning abstract accuracy numbers into intuitive visual feedback.
+          </p>
+        </article>
+
+        <article class="sig-card">
+          <span class="sig-badge">04 · Dual Input Flexibility</span>
+          <h3>Live Stream + Static Photos</h3>
+          <p>
+            Supporting both live webcam detection and image uploads makes the page useful in real time and asynchronously—whether someone is testing on a laptop camera or checking a saved photo on mobile.
+          </p>
+        </article>
+      </div>
+
+      <div class="connection-banner">
+        <div>
+          <h3>How This Connects to the Webpage &amp; Its Users</h3>
+          <p>
+            Instead of keeping your model locked inside a training dashboard, this webpage gives users a clean, welcoming interface where visual confidence bars and instant feedback explain <em>what</em> the model sees and <em>how sure</em> it is. For community members, that transparency makes AI easier to test, critique, improve, and adopt in classrooms, projects, and local workflows.
+          </p>
+        </div>
+        <a href="#tester" class="btn btn-primary">Try the Tester</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      Model endpoint: <code>https://teachablemachine.withgoogle.com/models/4jaD0ydMB/</code> · Built for static deployment on GitHub Pages.
+    </div>
+  </footer>
+
+  <!-- TensorFlow.js & Teachable Machine Image Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+
+  <script>
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/4jaD0ydMB/";
+
+    let model = null;
+    let maxPredictions = 0;
+    let webcam = null;
+    let isWebcamRunning = false;
+    let flipWebcam = true;
+    let rafId = null;
+    let activeSource = "Idle";
+
+    // DOM elements
+    const statusEl = document.getElementById("model-status");
+    const sourceTagEl = document.getElementById("source-tag");
+    const errorAlertEl = document.getElementById("error-alert");
+
+    const tabWebcam = document.getElementById("tab-webcam");
+    const tabUpload = document.getElementById("tab-upload");
+    const panelWebcam = document.getElementById("panel-webcam");
+    const panelUpload = document.getElementById("panel-upload");
+
+    const webcamStage = document.getElementById("webcam-stage");
+    const webcamPlaceholder = document.getElementById("webcam-placeholder");
+    const btnStartCam = document.getElementById("btn-start-cam");
+    const btnStopCam = document.getElementById("btn-stop-cam");
+    const btnFlipCam = document.getElementById("btn-flip-cam");
+
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("file-input");
+    const previewImg = document.getElementById("preview-img");
+    const uploadPlaceholder = document.getElementById("upload-placeholder");
+    const btnChooseFile = document.getElementById("btn-choose-file");
+    const btnClearImg = document.getElementById("btn-clear-img");
+
+    const topClassEl = document.getElementById("top-class");
+    const topProbEl = document.getElementById("top-prob");
+    const topBarEl = document.getElementById("top-bar");
+    const confidenceNoteEl = document.getElementById("confidence-note");
+    const predictionListEl = document.getElementById("prediction-list");
+
+    function showError(msg) {
+      errorAlertEl.textContent = msg;
+      errorAlertEl.classList.add("show");
+    }
+
+    function clearError() {
+      errorAlertEl.textContent = "";
+      errorAlertEl.classList.remove("show");
+    }
+
+    function buildPredictionBars(classLabels) {
+      predictionListEl.innerHTML = "";
+      classLabels.forEach((label, idx) => {
+        const item = document.createElement("div");
+        item.className = "pred-item";
+        item.id = `pred-item-${idx}`;
+        item.innerHTML = `
+          <div class="pred-meta">
+            <span>${escapeHtml(label)}</span>
+            <span id="pred-pct-${idx}">0.0%</span>
+          </div>
+          <div class="pred-bar-bg">
+            <div id="pred-bar-${idx}" class="pred-bar-fill"></div>
+          </div>
+        `;
+        predictionListEl.appendChild(item);
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function initModel() {
+      try {
+        clearError();
+        const modelURL = MODEL_URL + "model.json";
+        const metadataURL = MODEL_URL + "metadata.json";
+
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        const labels = model.getClassLabels ? model.getClassLabels() : Array.from({ length: maxPredictions }, (_, i) => `Class ${i + 1}`);
+        buildPredictionBars(labels);
+
+        statusEl.textContent = `Model Ready (${maxPredictions} classes)`;
+        statusEl.classList.add("ready");
+        btnStartCam.disabled = false;
+        confidenceNoteEl.textContent = "Model loaded. Start the webcam or upload an image to test.";
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Model Load Failed";
+        statusEl.classList.add("error");
+        showError(
+          "Could not load the Teachable Machine model. Verify that the model URL is published/public and that your browser allows external script & model requests."
+        );
+      }
+    }
+
+    function renderPredictions(predictions, sourceName) {
+      if (!predictions || !predictions.length) return;
+      sourceTagEl.textContent = sourceName;
+
+      let topIdx = 0;
+      for (let i = 1; i < predictions.length; i++) {
+        if (predictions[i].probability > predictions[topIdx].probability) {
+          topIdx = i;
+        }
+      }
+
+      const topPred = predictions[topIdx];
+      const topPct = (topPred.probability * 100).toFixed(1);
+
+      topClassEl.textContent = topPred.className;
+      topProbEl.textContent = `${topPct}%`;
+      topBarEl.style.width = `${Math.min(100, Math.max(0, topPred.probability * 100))}%`;
+
+      if (topPred.probability >= 0.8) {
+        confidenceNoteEl.textContent = "High confidence match — clear visual alignment with training examples.";
+      } else if (topPred.probability >= 0.5) {
+        confidenceNoteEl.textContent = "Moderate confidence — try better lighting, closer framing, or a clearer angle.";
+      } else {
+        confidenceNoteEl.textContent = "Low confidence — input may be ambiguous or outside the trained classes.";
+      }
+
+      predictions.forEach((pred, idx) => {
+        const pct = (pred.probability * 100).toFixed(1);
+        const itemEl = document.getElementById(`pred-item-${idx}`);
+        const pctEl = document.getElementById(`pred-pct-${idx}`);
+        const barEl = document.getElementById(`pred-bar-${idx}`);
+
+        if (itemEl && pctEl && barEl) {
+          itemEl.classList.toggle("is-top", idx === topIdx);
+          pctEl.textContent = `${pct}%`;
+          barEl.style.width = `${Math.min(100, Math.max(0, pred.probability * 100))}%`;
+        }
+      });
+    }
+
+    // Webcam logic
+    async function startWebcam() {
+      if (!model || isWebcamRunning) return;
+      clearError();
+
+      try {
+        btnStartCam.disabled = true;
+        statusEl.textContent = "Starting camera...";
+
+        webcam = new tmImage.Webcam(400, 300, flipWebcam);
+        await webcam.setup();
+        await webcam.play();
+
+        webcamPlaceholder.style.display = "none";
+        const existingCanvas = webcamStage.querySelector("canvas");
+        if (existingCanvas) existingCanvas.remove();
+        webcamStage.appendChild(webcam.canvas);
+
+        isWebcamRunning = true;
+        activeSource = "Live Webcam";
+        btnStopCam.disabled = false;
+        btnFlipCam.disabled = false;
+        statusEl.textContent = "Live Inference Active";
+
+        rafId = window.requestAnimationFrame(webcamLoop);
+      } catch (err) {
+        console.error(err);
+        isWebcamRunning = false;
+        btnStartCam.disabled = false;
+        btnStopCam.disabled = true;
+        statusEl.textContent = "Camera Unavailable";
+        showError(
+          "Unable to access the webcam. Check browser camera permissions or make sure the page is served over HTTPS (GitHub Pages uses HTTPS automatically)."
+        );
+      }
+    }
+
+    async function webcamLoop() {
+      if (!isWebcamRunning || !webcam) return;
+      webcam.update();
+      const prediction = await model.predict(webcam.canvas);
+      renderPredictions(prediction, "Live Webcam");
+      rafId = window.requestAnimationFrame(webcamLoop);
+    }
+
+    async function stopWebcam() {
+      isWebcamRunning = false;
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      if (webcam) {
+        try {
+          await webcam.stop();
+        } catch (_) {}
+      }
+      const canvas = webcamStage.querySelector("canvas");
+      if (canvas) canvas.remove();
+      webcamPlaceholder.style.display = "block";
+
+      btnStartCam.disabled = !model;
+      btnStopCam.disabled = true;
+      btnFlipCam.disabled = true;
+      if (model) statusEl.textContent = `Model Ready (${maxPredictions} classes)`;
+      if (activeSource === "Live Webcam") {
+        sourceTagEl.textContent = "Idle";
+      }
+    }
+
+    async function toggleFlipWebcam() {
+      flipWebcam = !flipWebcam;
+      btnFlipCam.textContent = `Flip: ${flipWebcam ? "On" : "Off"}`;
+      if (isWebcamRunning) {
+        await stopWebcam();
+        await startWebcam();
+      }
+    }
+
+    // Image upload logic
+    function handleImageFile(file) {
+      if (!file || !file.type.startsWith("image/")) {
+        showError("Please choose a valid image file (such as PNG, JPG, or WEBP).");
+        return;
+      }
+      clearError();
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImg.onload = async () => {
+          uploadPlaceholder.style.display = "none";
+          previewImg.style.display = "block";
+          btnClearImg.disabled = false;
+
+          if (model) {
+            activeSource = "Uploaded Image";
+            const prediction = await model.predict(previewImg);
+            renderPredictions(prediction, "Uploaded Image");
+          }
+        };
+        previewImg.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearUploadedImage() {
+      fileInput.value = "";
+      previewImg.removeAttribute("src");
+      previewImg.style.display = "none";
+      uploadPlaceholder.style.display = "block";
+      btnClearImg.disabled = true;
+      if (activeSource === "Uploaded Image") {
+        sourceTagEl.textContent = "Idle";
+      }
+    }
+
+    // Tab switching
+    function switchTab(mode) {
+      const isCam = mode === "webcam";
+      tabWebcam.classList.toggle("active", isCam);
+      tabUpload.classList.toggle("active", !isCam);
+      tabWebcam.setAttribute("aria-selected", String(isCam));
+      tabUpload.setAttribute("aria-selected", String(!isCam));
+      panelWebcam.classList.toggle("active", isCam);
+      panelUpload.classList.toggle("active", !isCam);
+
+      if (!isCam && isWebcamRunning) {
+        stopWebcam();
+      }
+    }
+
+    // Event listeners
+    tabWebcam.addEventListener("click", () => switchTab("webcam"));
+    tabUpload.addEventListener("click", () => switchTab("upload"));
+
+    btnStartCam.addEventListener("click", startWebcam);
+    btnStopCam.addEventListener("click", stopWebcam);
+    btnFlipCam.addEventListener("click", toggleFlipWebcam);
+
+    btnChooseFile.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageFile(e.target.files[0]);
+      }
+    });
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleImageFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    btnClearImg.addEventListener("click", clearUploadedImage);
+
+    // Boot
+    initModel();
+  </script>
+</body>
+</html>
